@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pingo, Hamm & Alien di Kamar Mainan 3D WebGL</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 3D Fullscreen Canvas -->
+    <div id="canvas-container">
+        <canvas id="webgl-canvas"></canvas>
+    </div>
+
+    <!-- Panel Info Kontrol -->
+    <div id="info" class="info-panel">
+        <b>Kontrol</b><br>
+        Drag mouse: <b>Rotate</b> &nbsp;•&nbsp; Scroll: zoom kamera<br>
+        Panah ←→↑↓: <b>Translate</b> Pingo &nbsp;•&nbsp; + / − : <b>Scaling</b><br>
+        Spasi: auto-rotate on/off &nbsp;•&nbsp; A: animasi on/off
+    </div>
+
+    <!-- Application Script (Cache-Busted) -->
+    <script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
