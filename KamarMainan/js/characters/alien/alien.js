@@ -23,6 +23,7 @@ export class Alien {
     constructor(gl) {
         this.gl = gl;
 
+        // Ubah Ukuran
         this.root = new SceneNode("LGM_Root");
         this.root.scale = Vec3.create(0.45, 0.45, 0.45);
 
@@ -31,21 +32,6 @@ export class Alien {
         this.eyeBlink = 1.0;
         this.eyelids = [];
 
-        // Clumsy Interactive Hierarchy Drag & Spring State
-        this.clumsy = {
-            activePart: null,
-            isDragging: false,
-            dragX: 0.0,
-            dragY: 0.0,
-            currentX: 0.0,
-            currentY: 0.0,
-            velX: 0.0,
-            velY: 0.0,
-            inertiaLagX: 0.0,
-            inertiaLagY: 0.0,
-            inertiaVelX: 0.0,
-            inertiaVelY: 0.0
-        };
 
         this.buildModel();
     }
@@ -991,13 +977,18 @@ export class Alien {
             this.head.rotation[1] = 0.0;
 
             // Elevasi melayang di udara saat putaran salto
-            const lift = Math.sin(tRel * Math.PI) * 0.85;
+            const lift = Math.sin(tRel * Math.PI) * 2.85;
             this.body.position[1] = 1.78 + lift;
 
-            // Sumbu miring sembarang non-trivial: [1.0, 1.0, 0.5]
-            const arbAxis = [1.0, 1.0, 0.5];
-            const smoothT = 0.5 - 0.5 * Math.cos(tRel * Math.PI);
-            const angle = smoothT * (2.0 * Math.PI);
+            const arbAxis = [
+                1.0 + Math.sin(tRel * Math.PI * 2) * 0.4,
+                1.0,
+                0.5 + Math.cos(tRel * Math.PI * 3) * 0.3
+                ];
+             const smoothT = tRel < 0.5
+                ? 2 * tRel * tRel
+                : 1 - Math.pow(-2 * tRel + 2, 2) / 2;
+            const angle = smoothT * (4.0 * Math.PI); // 2× putaran
 
             this.body.arbitraryRotation = { angle: angle, axis: arbAxis };
 
@@ -1070,10 +1061,6 @@ export class Alien {
             status = "✨ 8. ROTATE: Berbalik Menghadap Depan & Loop Mengulang!";
         }
 
-        // Jalankan fisika clumsy drag & update hirarki scene graph
-        this.updateClumsyPhysics(delta, globalTime);
-        this.applyClumsyTransforms(globalTime);
-        this.root.update(globalTime);
 
         return { statusText: status };
     }
@@ -1088,9 +1075,6 @@ export class Alien {
         this.root.rotation[1] = 0.0;
         this.applyIdleGait(time);
 
-        this.updateClumsyPhysics(delta, time);
-        this.applyClumsyTransforms(time);
-        this.root.update(time);
 
         return { statusText: "Tekan Spasi untuk Memulai Cerita Animasi" };
     }
@@ -1106,20 +1090,6 @@ export class Alien {
         }
     }
 
-    /**
-     * Memulai / memperbarui drag kursor kanan mouse pada bagian karakter tertentu
-     * @param {string} part 'body' | 'head' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg'
-     * @param {number} dx Selisih mouse X
-     * @param {number} dy Selisih mouse Y
-     */
-    applyClumsyDrag(part, dx, dy) {
-        this.clumsy.isDragging = true;
-        this.clumsy.activePart = part;
-        // Batasi rentang maksimum drag agar gerakan terkontrol & tidak terlalu sensitif
-        const maxDrag = 140.0;
-        this.clumsy.dragX = Math.max(-maxDrag, Math.min(maxDrag, dx));
-        this.clumsy.dragY = Math.max(-maxDrag, Math.min(maxDrag, dy));
-    }
 
     /**
      * Melepas tombol kanan mouse: mengaktifkan pemulihan pegas stabil teredam
@@ -1134,214 +1104,6 @@ export class Alien {
         this.clumsy.velY = 0.0;
     }
 
-    /**
-     * Simulasi Damped Spring Oscillator stabil:
-     * Mengembalikan karakter ke posisi normal dengan cepat dan halus
-     */
-    updateClumsyPhysics(delta, time) {
-        const c = this.clumsy;
-        if (!c.activePart && Math.abs(c.currentX) < 0.0001 && Math.abs(c.currentY) < 0.0001) {
-            return;
-        }
-
-        const dt = Math.min(delta, 0.033);
-
-        if (c.isDragging) {
-            // Mengikuti kursor mouse secara terkontrol dan stabil
-            const followSpeed = 16.0;
-            c.currentX += (c.dragX - c.currentX) * Math.min(1.0, followSpeed * dt);
-            c.currentY += (c.dragY - c.currentY) * Math.min(1.0, followSpeed * dt);
-            c.velX = 0.0;
-            c.velY = 0.0;
-
-            // Inersia lag sekunder halus
-            const lagSpeed = 10.0;
-            c.inertiaLagX += (c.currentX - c.inertiaLagX) * Math.min(1.0, lagSpeed * dt);
-            c.inertiaLagY += (c.currentY - c.inertiaLagY) * Math.min(1.0, lagSpeed * dt);
-        } else {
-            // Damped Spring Simulation: memantul sedikit lalu kembali normal sempurna
-            const k = 65.0;       // Kekuatan pegas pemulih
-            const damping = 12.0; // Peredaman stabil (tidak liar, cepat diam di tengah)
-
-            const forceX = -k * c.currentX - damping * c.velX;
-            const forceY = -k * c.currentY - damping * c.velY;
-
-            c.velX += forceX * dt;
-            c.velY += forceY * dt;
-
-            c.currentX += c.velX * dt;
-            c.currentY += c.velY * dt;
-
-            // Inersia lag sekunder juga mereda ke 0
-            const kLag = 45.0;
-            const dLag = 10.0;
-            const forceLagX = -kLag * c.inertiaLagX - dLag * c.inertiaVelX;
-            const forceLagY = -kLag * c.inertiaLagY - dLag * c.inertiaVelY;
-            c.inertiaVelX += forceLagX * dt;
-            c.inertiaVelY += forceLagY * dt;
-            c.inertiaLagX += c.inertiaVelX * dt;
-            c.inertiaLagY += c.inertiaVelY * dt;
-
-            // Jika simpangan sudah sangat dekat dengan 0, stabilkan kembali normal sempurna!
-            if (Math.hypot(c.currentX, c.currentY) < 0.002 && Math.hypot(c.velX, c.velY) < 0.005) {
-                c.currentX = 0;
-                c.currentY = 0;
-                c.velX = 0;
-                c.velY = 0;
-                c.dragX = 0;
-                c.dragY = 0;
-                c.inertiaLagX = 0;
-                c.inertiaLagY = 0;
-                c.activePart = null;
-            }
-        }
-    }
-
-    /**
-     * Terapkan transformasi hirarkis berdasarkan bagian yang ditarik mouse
-     * dengan sensitivitas yang lembut, nyaman, dan terkontrol
-     */
-    applyClumsyTransforms(time) {
-        const c = this.clumsy;
-        if (!c.activePart || (Math.abs(c.currentX) < 0.0001 && Math.abs(c.currentY) < 0.0001)) {
-            return;
-        }
-
-        const curX = c.currentX;
-        const curY = c.currentY;
-
-        // Sensitivitas nyaman & terkontrol (tidak terlalu sensitif)
-        const sensPos = 0.0022;
-        const sensRot = 0.0014;
-
-        switch (c.activePart) {
-            case 'body': {
-                // =========================================================================
-                // BUKTI 1: BADAN ADALAH PARENT UTAMA
-                // Saat badan digerakkan, seluruh scene graph (kepala, leher, lengan, kaki)
-                // otomatis berpindah posisi dan berotasi mengikuti matrix badan!
-                // =========================================================================
-                this.body.position[0] += curX * sensPos;
-                this.body.position[1] += -curY * sensPos;
-                this.body.rotation[2] += -curX * sensRot;
-                this.body.rotation[0] += curY * sensRot;
-
-                // Clumsy Inertia: Kepala & Leher membengkok elastis menahan pergerakan
-                const lagX = (curX - c.inertiaLagX) * 0.0016;
-                const lagY = (curY - c.inertiaLagY) * 0.0016;
-                this.head.rotation[2] += lagX;
-                this.head.rotation[0] += -lagY;
-
-                // Antena bergoyang wajar mengikuti inersia gerak badan
-                const speedMag = Math.hypot(curX, curY);
-                if (this.antennaBase) {
-                    this.antennaBase.rotation[2] += Math.sin(time * 12.0) * speedMag * 0.0010 - curX * 0.0014;
-                    this.antennaBase.rotation[0] += Math.cos(time * 10.0) * speedMag * 0.0010 + curY * 0.0014;
-                }
-
-                // Kedua Lengan menjuntai lembut
-                if (this.leftArm) {
-                    this.leftArm.rotation[2] += curX * 0.0018;
-                    this.leftArm.rotation[0] += -curY * 0.0018;
-                }
-                if (this.leftForearm) {
-                    this.leftForearm.rotation[0] += -curY * 0.0010;
-                }
-                if (this.rightArm) {
-                    this.rightArm.rotation[2] += curX * 0.0018;
-                    this.rightArm.rotation[0] += -curY * 0.0018;
-                }
-                if (this.rightForearm) {
-                    this.rightForearm.rotation[0] += -curY * 0.0010;
-                }
-
-                // Kedua Kaki menjuntai lembut
-                if (this.leftLeg) {
-                    this.leftLeg.rotation[2] += curX * 0.0014;
-                    this.leftLeg.rotation[0] += -curY * 0.0014;
-                }
-                if (this.rightLeg) {
-                    this.rightLeg.rotation[2] += curX * 0.0014;
-                    this.rightLeg.rotation[0] += -curY * 0.0014;
-                }
-                break;
-            }
-
-            case 'head': {
-                // =========================================================================
-                // BUKTI 2: KEPALA ADALAH CHILD DARI BADAN
-                // Hanya kepala yang bergerak miring/menggeleng secara halus.
-                // Anak-anak kepala (mata, pupil, glint, senyum, antena, telinga) ikut semua!
-                // Badan, kedua tangan, dan kedua kaki TETAP DIAM!
-                // =========================================================================
-                this.head.rotation[2] += -curX * 0.0024;
-                this.head.rotation[0] += curY * 0.0024;
-                this.head.position[0] += curX * 0.0006;
-                this.head.position[1] += -curY * 0.0006;
-
-                if (this.antennaBase) {
-                    this.antennaBase.rotation[2] += -curX * 0.0016;
-                }
-                break;
-            }
-
-            case 'leftArm': {
-                // =========================================================================
-                // BUKTI 3: LENGAN KIRI ADALAH CHILD DARI BADAN
-                // Hanya lengan kiri yang bergerak! Anak-anaknya (lengan bawah, telapak, 3 jari)
-                // ikut kompak. Bagian lainnya TETAP DIAM!
-                // =========================================================================
-                if (this.leftArm) {
-                    this.leftArm.rotation[2] += -curX * 0.0026;
-                    this.leftArm.rotation[0] += curY * 0.0026;
-                }
-                if (this.leftForearm) {
-                    this.leftForearm.rotation[0] += curY * 0.0016;
-                }
-                break;
-            }
-
-            case 'rightArm': {
-                // =========================================================================
-                // BUKTI 4: LENGAN KANAN ADALAH CHILD DARI BADAN
-                // Hanya lengan kanan yang bergerak! Anak-anaknya (lengan bawah, telapak, 3 jari)
-                // ikut kompak. Bagian lainnya TETAP DIAM!
-                // =========================================================================
-                if (this.rightArm) {
-                    this.rightArm.rotation[2] += -curX * 0.0026;
-                    this.rightArm.rotation[0] += curY * 0.0026;
-                }
-                if (this.rightForearm) {
-                    this.rightForearm.rotation[0] += curY * 0.0016;
-                }
-                break;
-            }
-
-            case 'leftLeg': {
-                // =========================================================================
-                // BUKTI 5: KAKI KIRI ADALAH CHILD DARI BADAN
-                // Hanya kaki kiri dan sepatunya yang bergerak! Bagian lainnya TETAP DIAM!
-                // =========================================================================
-                if (this.leftLeg) {
-                    this.leftLeg.rotation[0] += -curY * 0.0024;
-                    this.leftLeg.rotation[2] += -curX * 0.0018;
-                }
-                break;
-            }
-
-            case 'rightLeg': {
-                // =========================================================================
-                // BUKTI 6: KAKI KANAN ADALAH CHILD DARI BADAN
-                // Hanya kaki kanan dan sepatunya yang bergerak! Bagian lainnya TETAP DIAM!
-                // =========================================================================
-                if (this.rightLeg) {
-                    this.rightLeg.rotation[0] += -curY * 0.0024;
-                    this.rightLeg.rotation[2] += -curX * 0.0018;
-                }
-                break;
-            }
-        }
-    }
 
     /**
      * Hit-test bounding spheres untuk Raycasting dari kursor mouse
@@ -1486,4 +1248,3 @@ export class Alien {
         return spheres;
     }
 }
-
