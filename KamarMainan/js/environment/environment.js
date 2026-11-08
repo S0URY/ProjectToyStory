@@ -1,5 +1,5 @@
 /**
- * environment.js - Kamar Mainan Anak (Toy Room Environment) untuk Pingo
+ * environment.js - Kamar Mainan Anak (Toy Room Environment) untuk Wheezy
  * Nuansa: kamar anak yang penuh mainan, dilihat dari "ukuran mainan" sehingga semuanya terasa besar.
  *
  * Isi lingkungan:
@@ -494,7 +494,7 @@ export class Environment {
      * Animasi lingkungan:
      * - Bola memantul: TRANSLATE naik-turun + SCALING squash saat menyentuh lantai + ROTATE berguling
      * - Gasing: ROTATE Y cepat + ROTATE ARBITRARY AXIS (sumbu miring yang ikut berputar = oleng)
-     * characterPosition dipakai supaya sebagian gelembung keluar dari dekat Pingo.
+     * characterPosition dipakai supaya sebagian gelembung keluar dari dekat Wheezy.
      */
     update(time, characterPosition) {
         // ---- Bola memantul ----

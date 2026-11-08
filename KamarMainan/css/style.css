@@ -1,4 +1,4 @@
-/* style.css - Pingo di Kamar Mainan WebGL */
+/* style.css - Wheezy di Kamar Mainan WebGL */
 :root {
     --bg-deep: #f5e1bd;
     --panel-bg: rgba(255, 255, 255, 0.8);
@@ -54,5 +54,20 @@ body, html {
     font-size: 13px;
     color: var(--text-dark);
     line-height: 1.5;
+    pointer-events: none;
+}
+
+/* Label mode fokus kamera di kiri atas */
+.focus-label {
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    z-index: 10;
+    background: var(--panel-bg);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
     pointer-events: none;
 }

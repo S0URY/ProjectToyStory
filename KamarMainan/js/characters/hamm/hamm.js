@@ -5,7 +5,7 @@
  *  - LIBS di-import dari ./libs.js (sebelumnya <script src="libs.js">)
  *  - Shader, kamera, dan render loop milik Hamm dihapus -> memakai milik main.js
  *  - Kode penyusun karakter dibungkus fungsi buildHamm()
- *  - Ditambah class Hamm (update + draw) supaya dipanggil dari main.js seperti Pingo
+ *  - Ditambah class Hamm (update + draw) supaya dipanggil dari main.js seperti Wheezy
  */
 
 import { LIBS } from './libs.js';
@@ -329,7 +329,7 @@ function mix(a, b, t) {
 
 function animationState(seconds) {
   const t = seconds % 7.2;
-  const s = { x:0, jump:0, yaw:0, roll:0, sx:1, sy:1, sz:1, walk:0, gait:0, tail:0, spin:0 };
+  const s = { x:0, jump:0, yaw:0, roll:0, sx:1, sy:1, sz:1, walk:0, gait:0, tail:0 };
 
   //Putar ke kiri
   if (t < 0.35) {
@@ -366,20 +366,14 @@ function animationState(seconds) {
   }
 
   //Lompat+putar lawan arah jarum jam
-//Lompat+putar lawan arah jarum jam
-else if (t < 5.92) {
-  const u = (t - 4.48) / 1.44;
-  //Gerakan melompat
-  s.jump = 0.94 * 4 * u * (1 - u);
-  //Putaran 360 derajat dengan Rotate Arbitrary Axis
-  s.spin = 2 * Math.PI * u;
-  //Squash and stretch saat di udara
-  s.sx = 1 - 0.05 * Math.sin(Math.PI * u);
-  s.sz = s.sx;
-  s.sy = 1 + 0.12 * Math.sin(Math.PI * u);
-  s.gait = Math.sin(Math.PI * u);
-  s.walk = 0.55 * Math.sin(Math.PI * u);
-}
+  else if (t < 5.92) {
+    const u = (t-4.48)/1.44;
+    s.jump = 0.94*4*u*(1-u); s.yaw = 2*Math.PI*u;
+    s.roll = 0.10*Math.sin(2*Math.PI*u);
+    s.sx = 1-0.05*Math.sin(Math.PI*u); s.sz = s.sx;
+    s.sy = 1+0.12*Math.sin(Math.PI*u);
+    s.gait = Math.sin(Math.PI*u); s.walk = 0.55*Math.sin(Math.PI*u);
+  }
 
   //Squash and stretch saat mendarat
   else if (t < 6.15) {
@@ -420,80 +414,30 @@ function rotateZ(p, pivot, angle) {
   return [pivot[0]+x*c-y*s,pivot[1]+x*s+y*c,p[2]];
 }
 
-//Rotate Arbitrary Axis menggunakan Rodrigues' Rotation Formula
-function rotateArbitraryAxis(p, pivot, axis, angle) {
-  const k = normalize3(axis);
-  //Posisi relatif terhadap titik pivot
-  const v = [
-    p[0] - pivot[0],
-    p[1] - pivot[1],
-    p[2] - pivot[2]
-  ];
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  //Perkalian silang antara sumbu rotasi dan posisi
-  const cross = cross3(k, v);
-  //Perkalian titik antara sumbu rotasi dan posisi
-  const dot = dot3(k, v);
-  //Rumus Rodrigues
-  const rotated = [
-    v[0] * c + cross[0] * s + k[0] * dot * (1 - c),
-    v[1] * c + cross[1] * s + k[1] * dot * (1 - c),
-    v[2] * c + cross[2] * s + k[2] * dot * (1 - c)
-  ];
-  //Kembalikan ke posisi semula
-  return [
-    pivot[0] + rotated[0],
-    pivot[1] + rotated[1],
-    pivot[2] + rotated[2]
-  ];
-}
-
 function transformVertex(v, obj, s, isNormal = false) {
-  let p = [...v];
+  let p = v.slice();
+
   //Kaki gerak saat jalan
   if (legSigns[obj.group] !== undefined && obj.pivot) {
-    const angle = 0.42 * s.walk * s.gait * legSigns[obj.group];
-    p = rotateX(p, isNormal ? [0, 0, 0] : obj.pivot, angle);
+    p = rotateX(p, isNormal ? [0,0,0] : obj.pivot, 0.42*s.walk*s.gait*legSigns[obj.group]);
   }
+
   //Ekor gerak saat jalan
-  if (obj.group === 'tail') {
-    p = rotateY(p, isNormal ? [0, 0, 0] : tailPivot, s.tail);
-  }
+  if (obj.group === 'tail') p = rotateY(p, isNormal ? [0,0,0] : tailPivot, s.tail);
+
   if (isNormal) {
-    p = [
-      p[0] / s.sx,
-      p[1] / s.sy,
-      p[2] / s.sz
-    ];
-    p = rotateZ(p, [0, 0, 0], s.roll);
-    //Normal ikut diputar menggunakan Arbitrary Axis
-    p = rotateArbitraryAxis(
-      p,
-      [0, 0, 0],
-      [0.25, 0.3, 1],
-      s.spin
-    );
-    p = rotateY(p, [0, 0, 0], s.yaw);
-    return normalize3(p);
+    p = [p[0]/s.sx,p[1]/s.sy,p[2]/s.sz];
+    return normalize3(rotateY(rotateZ(p,[0,0,0],s.roll),[0,0,0],s.yaw));
   }
+
   //Squash and stretch
-  p = [
-    p[0] * s.sx,
-    p[1] * s.sy,
-    p[2] * s.sz
-  ];
-  p = rotateZ(p, [0, bodyPivotY, 0], s.roll);
-  //Putar karakter menggunakan Rotate Arbitrary Axis
-  p = rotateArbitraryAxis(
-    p,
-    [0, bodyPivotY, 0],
-    [0.25, 0.3, 1],
-    s.spin
-  );
-  //Putar arah hadap
-  p = rotateY(p, [0, 0, 0], s.yaw);
-  //Perpindahan horizontal dan vertikal
+  p = [p[0]*s.sx,p[1]*s.sy,p[2]*s.sz];
+  p = rotateZ(p,[0,bodyPivotY,0],s.roll);
+
+  // Putar arah hadap.
+  p = rotateY(p,[0,0,0],s.yaw);
+
+  // Perpindahan horizontal dan vertikal.
   p[0] += s.x;
   p[1] += s.jump + groundOffset;
   return p;
@@ -515,11 +459,11 @@ function updateObject(obj, state) {
 
 
 // =============================================================================
-// Class pembungkus: dipanggil dari main.js sama seperti Pingo
+// Class pembungkus: dipanggil dari main.js sama seperti Wheezy
 // =============================================================================
 export class Hamm {
   /**
-   * position = letak Hamm di kamar (Hamm digeser ke samping supaya tidak menabrak Pingo)
+   * position = letak Hamm di kamar (Hamm digeser ke samping supaya tidak menabrak Wheezy)
    */
   constructor(glContext, position = [-1.2, 0.0, 2.8]) {
     gl = glContext;
@@ -532,7 +476,17 @@ export class Hamm {
   /** Animasi asli Hamm (jalan, putar, lompat, squash-stretch, ekor). time dalam detik. */
   update(time) {
     const state = animationState(time);
+    this.state = state;   // disimpan supaya kamera fokus bisa mengikuti Hamm
     for (const obj of objects) updateObject(obj, state);
+  }
+
+  /**
+   * Titik tengah badan Hamm di dunia (dipakai kamera fokus, tombol 2).
+   * x = posisi Hamm + geseran jalan (state.x), y = poros badan (1.20) + groundOffset (-0.20) + lompatan.
+   */
+  getFocusPoint() {
+    const s = this.state || { x: 0, jump: 0 };
+    return [this.position[0] + s.x, this.position[1] + bodyPivotY + groundOffset + s.jump, this.position[2]];
   }
 
   /** Menggambar Hamm dengan shader milik main.js. Hamm tidak punya objek transparan. */

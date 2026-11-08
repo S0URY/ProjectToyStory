@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pingo, Hamm & Alien di Kamar Mainan 3D WebGL</title>
+    <title>Wheezy, Hamm & Alien di Kamar Mainan 3D WebGL</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -16,11 +16,16 @@
     <div id="info" class="info-panel">
         <b>Kontrol</b><br>
         Drag mouse: <b>Rotate</b> &nbsp;•&nbsp; Scroll: zoom kamera<br>
-        Panah ←→↑↓: <b>Translate</b> Pingo &nbsp;•&nbsp; + / − : <b>Scaling</b><br>
-        Spasi: auto-rotate on/off &nbsp;•&nbsp; A: animasi on/off
+        Panah ←→↑↓: <b>Translate</b> Wheezy &nbsp;•&nbsp; + / − : <b>Scaling</b><br>
+        Spasi: auto-rotate on/off &nbsp;•&nbsp; A: animasi on/off<br>
+        <b>1</b> Wheezy &nbsp;•&nbsp; <b>2</b> Hamm &nbsp;•&nbsp; <b>3</b> Alien: <b>fokus</b> kamera &nbsp;•&nbsp; <b>0</b>: seluruh kamar<br>
+        Z / X: zoom in / out (saat fokus bisa zoom sampai tembus ke dalam badan)
     </div>
 
+    <!-- Label mode fokus kamera (diisi oleh main.js) -->
+    <div id="focus-label" class="focus-label">Fokus: Seluruh kamar</div>
+
     <!-- Application Script (Cache-Busted) -->
-    <script type="module" src="js/main.js?v=1"></script>
+    <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

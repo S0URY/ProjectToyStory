@@ -5,7 +5,7 @@
  * 2. TRANSLATE ke atas (sumbu Y) + goyang sedikit di X dan Z
  * 3. SCALING membesar (sampai +80%) saat gelembung naik
  * 4. Transparan, warna pelangi pastel seperti gelembung sabun
- * 5. Sebagian gelembung keluar dari dekat Pingo (mengikuti posisi Pingo)
+ * 5. Sebagian gelembung keluar dari dekat Wheezy (mengikuti posisi Wheezy)
  */
 
 import { SceneNode } from '../core/scene-node.js';
@@ -55,7 +55,7 @@ export class BubbleSystem {
             });
         }
 
-        // Beberapa gelembung keluar dari paruh Pingo
+        // Beberapa gelembung keluar dari paruh Wheezy
         for (let i = 0; i < characterCount; i++) {
             this.bubbles.push({
                 node: makeNode(count + i),

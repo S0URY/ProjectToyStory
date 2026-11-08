@@ -5,7 +5,7 @@
  * ditambah Disk (bidang datar), Grid Parametrik umum, Translate & Merge mesh.
  *
  * Quadric yang DINILAI (bukan ellipsoid/cylinder):
- *   Karakter Pingo  : Elliptic Paraboloid (kaki), Cone (paruh)
+ *   Karakter Wheezy  : Elliptic Paraboloid (kaki), Cone (paruh)
  *   Kamar mainan    : Cone (gasing, berkas cahaya), Hyperboloid of One Sheet (sabuk bola)
  *   Siap dipakai    : Hyperbolic Paraboloid, Hyperboloid of Two Sheets
  *
@@ -80,7 +80,7 @@ export const Quadrics = {
      *   z = c · cos(v) · sin(u)
      * Normal: [x/a², y/b², z/c²] dinormalisasi (gradien persamaan implisit)
      *
-     * Dipakai untuk: badan, perut, kepala, mata, pipi, sayap Pingo, gelembung,
+     * Dipakai untuk: badan, perut, kepala, mata, pipi, sayap Wheezy, gelembung,
      * batu, kerang (setengah ellipsoid), mutiara, badan bintang laut.
      */
     createEllipsoid(a = 1.0, b = 1.0, c = 1.0, stacks = 40, sectors = 56, vMin = -Math.PI / 2, vMax = Math.PI / 2) {
@@ -110,12 +110,12 @@ export const Quadrics = {
      * Normal: gradien x²/a² + z²/b² - y/c  ->  [2x/a², -1/c, 2z/b²]
      *
      * Jika c NEGATIF, mangkuk terbalik menjadi KUBAH (puncak di titik asal).
-     * Dipakai untuk: KAKI PINGO (di-scale sangat pipih).
+     * Dipakai untuk: KAKI WHEEZY (di-scale sangat pipih).
      */
     /**
      * 2. ELLIPTIC PARABOLOID (mangkuk)
      * Persamaan implisit: x²/a² + z²/b² = y/c
-     * Mendukung pemanggilan Pingo: (a, b, c, stacks, sectors)
+     * Mendukung pemanggilan Wheezy: (a, b, c, stacks, sectors)
      * dan Alien: (a, b, c, inverted, stacks, sectors)
      */
     createEllipticParaboloid(a = 1.0, b = 1.0, c = -1.0, arg4 = 40, arg5 = 56, arg6 = 36) {
@@ -188,7 +188,7 @@ export const Quadrics = {
 
     /**
      * 3. ELLIPTIC CONE (kerucut)
-     * Mendukung pemanggilan Pingo: (radius, height, sectors)
+     * Mendukung pemanggilan Wheezy: (radius, height, sectors)
      * dan Alien: (rBase, rApex, height, stacks, sectors, capped)
      */
     createCone(rBase = 1.0, arg2 = 0.0, arg3 = 1.0, stacks = 20, sectors = 20, capped = true) {

@@ -34,7 +34,7 @@ if __name__ == '__main__':
         httpd = http.server.ThreadingHTTPServer(('0.0.0.0', PORT), NoCacheHTTPRequestHandler)
 
     print(f"=======================================================")
-    print(f"Server Pingo Penguin WebGL AKTIF!")
+    print(f"Server Wheezy Penguin WebGL AKTIF!")
     print(f"Akses browser di: http://localhost:{PORT}/index.html")
     print(f"Atau alternatif:  http://127.0.0.1:{PORT}/index.html")
     print(f"=======================================================")

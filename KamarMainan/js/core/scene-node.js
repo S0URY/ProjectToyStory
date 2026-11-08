@@ -3,7 +3,7 @@
  * Implements:
  * - Parent-Child scene graph
  * - Hierarchical matrix multiplication: WorldMatrix = ParentWorldMatrix * LocalMatrix
- * - Custom local matrix hook (dipakai untuk Rotate Arbitrary Axis di sayap Pingo)
+ * - Custom local matrix hook (dipakai untuk Rotate Arbitrary Axis di sayap Wheezy)
  */
 
 import { Mat4, Vec3 } from './math3d.js';

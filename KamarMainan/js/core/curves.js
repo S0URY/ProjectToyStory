@@ -1,8 +1,8 @@
 /**
  * curves.js - Kurva 3D Parametrik & Generator Mesh Tabung
  * Implements:
- * 1. Cubic Bezier 3D (alis Pingo)
- * 2. Tabung (tube) yang mengikuti kurva 3D apa pun -> alis Pingo.
+ * 1. Cubic Bezier 3D (alis Wheezy)
+ * 2. Tabung (tube) yang mengikuti kurva 3D apa pun -> alis Wheezy.
  *
  * Generates solid 3D Tube Meshes with smooth normals and lighting.
  */
@@ -12,7 +12,7 @@ import { Quadrics } from './quadrics.js';
 
 export const Curves = {
     /**
-     * CUBIC BEZIER 3D (dipakai untuk alis Pingo)
+     * CUBIC BEZIER 3D (dipakai untuk alis Wheezy)
      * B(t) = (1-t)³·P0 + 3(1-t)²t·P1 + 3(1-t)t²·P2 + t³·P3,   t ∈ [0, 1]
      * P0 = titik awal, P3 = titik akhir, P1 & P2 = titik kontrol (menarik bentuk lengkungan)
      */
@@ -41,7 +41,7 @@ export const Curves = {
 
     /**
      * Generates a 3D Tube mesh along a sequence of 3D points
-     * Mendukung pemanggilan Pingo: (points, radiusFn, radialSegments, capEnd, capStart)
+     * Mendukung pemanggilan Wheezy: (points, radiusFn, radialSegments, capEnd, capStart)
      * dan Alien: (points, radius, radialSegments, radiusFn)
      */
     createTubeFromPoints(points, arg2 = 0.05, arg3 = 12, arg4 = null, capEnd = true, capStart = true) {

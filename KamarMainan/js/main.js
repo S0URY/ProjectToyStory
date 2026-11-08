@@ -1,16 +1,20 @@
 /**
- * main.js - Master Orchestrator for Pingo the Penguin Pure WebGL Application
- * Menampilkan Pingo, Hamm & Alien di kamar mainan yang sama, dengan kamera orbit dan kontrol keyboard:
+ * main.js - Master Orchestrator for Wheezy the Penguin Pure WebGL Application
+ * Menampilkan Wheezy, Hamm & Alien di kamar mainan yang sama, dengan kamera orbit dan kontrol keyboard:
  *   Drag mouse : Rotate kamera      Scroll : zoom
- *   Panah      : Translate Pingo     + / -  : Scaling Pingo
+ *   Panah      : Translate Wheezy     + / -  : Scaling Wheezy
  *   Spasi      : auto-rotate on/off A      : animasi on/off
+ *   1 / 2 / 3  : FOKUS kamera ke Wheezy / Hamm / Alien (kamera mengikuti karakter,
+ *                zoom bisa sampai menembus ke dalam badan untuk melihat bentuknya)
+ *   0          : kembali melihat seluruh kamar
+ *   Z / X      : zoom in / zoom out (selain scroll)
  */
 
 import { OrbitCamera } from './core/camera.js';
 import { WebGLUtils, Shaders } from './core/webgl-utils.js';
 import { Vec3 } from './core/math3d.js';
 import { SceneNode } from './core/scene-node.js';
-import { Pingo } from './characters/pingo/pingo.js';
+import { Wheezy } from './characters/wheezy/wheezy.js';
 import { Hamm } from './characters/hamm/hamm.js';
 import { Alien } from './characters/alien/alien.js';
 import { Environment } from './environment/environment.js';
@@ -29,7 +33,7 @@ class App {
         }
 
         this.camera = new OrbitCamera(this.canvas);
-        // Kamera diarahkan ke tengah antara Pingo dan Hamm
+        // Kamera diarahkan ke tengah antara Wheezy dan Hamm
         this.camera.target[0] = this.camera.desiredTarget[0] = 0.0;
         this.camera.target[2] = this.camera.desiredTarget[2] = 1.2;
 
@@ -37,15 +41,21 @@ class App {
 
         // Semua nilai yang bisa diubah user lewat keyboard
         this.controls = {
-            posX: 1.2,          // Translate X (panah kiri/kanan) - Pingo di kanan, Hamm di kiri depan
+            posX: 1.2,          // Translate X (panah kiri/kanan) - Wheezy di kanan, Hamm di kiri depan
             posZ: 0.0,          // Translate Z (panah atas/bawah)
-            scale: 0.8,         // Scaling (+ / -) - ukuran awal Pingo diperkecil sedikit
+            scale: 0.8,         // Scaling (+ / -) - ukuran awal Wheezy diperkecil sedikit
             autoRotate: true,   // Spasi
             animate: true       // A
         };
 
         // Waktu animasi: hanya bertambah saat animasi aktif
         this.animTime = 0.0;
+
+        // ===== MODE FOKUS KAMERA (untuk presentasi) =====
+        // 0 = lihat seluruh kamar, 1 = Wheezy, 2 = Hamm, 3 = Alien
+        this.focus = 0;
+        this.focusNames = ['Seluruh kamar', 'Wheezy', 'Hamm', 'Alien'];
+        this.focusLabel = document.getElementById('focus-label');
 
         this.init();
     }
@@ -98,10 +108,10 @@ class App {
         // Instantiate Environment
         this.environment = new Environment(gl);
 
-        // Instantiate Pingo
-        this.pingo = new Pingo(gl);
+        // Instantiate Wheezy
+        this.wheezy = new Wheezy(gl);
 
-        // Instantiate Hamm (di kiri depan Pingo, di area lantai yang kosong dari mainan)
+        // Instantiate Hamm (di kiri depan Wheezy, di area lantai yang kosong dari mainan)
         this.hamm = new Hamm(gl, [-1.2, 0.0, 2.8]);
 
         // ===== Alien (dari project ToyStory) =====
@@ -119,7 +129,7 @@ class App {
     }
 
     /**
-     * Setup Alien (menggunakan core universal yang sama dengan Pingo, Hamm & Environment)
+     * Setup Alien (menggunakan core universal yang sama dengan Wheezy, Hamm & Environment)
      */
     setupAlien(gl) {
         this.alien = new Alien(gl);
@@ -159,14 +169,14 @@ class App {
         window.addEventListener('keydown', (e) => {
             const k = e.key;
 
-            // Panah: TRANSLATE Pingo
+            // Panah: TRANSLATE Wheezy
             if (k === 'ArrowLeft') this.controls.posX -= 0.15;
             if (k === 'ArrowRight') this.controls.posX += 0.15;
             if (k === 'ArrowUp') this.controls.posZ -= 0.15;
             if (k === 'ArrowDown') this.controls.posZ += 0.15;
             if (k.startsWith('Arrow')) e.preventDefault();
 
-            // + / - : SCALING Pingo
+            // + / - : SCALING Wheezy
             if (k === '+' || k === '=') this.controls.scale = Math.min(2.0, this.controls.scale + 0.1);
             if (k === '-' || k === '_') this.controls.scale = Math.max(0.3, this.controls.scale - 0.1);
 
@@ -178,7 +188,60 @@ class App {
 
             // A: animasi on/off
             if (k === 'a' || k === 'A') this.controls.animate = !this.controls.animate;
+
+            // 1 / 2 / 3: fokus ke satu karakter, 0: kembali ke seluruh kamar
+            if (k >= '0' && k <= '3') this.setFocus(Number(k));
+
+            // Z / X: zoom in / zoom out
+            if (k === 'z' || k === 'Z') this.camera.zoomBy(0.8);
+            if (k === 'x' || k === 'X') this.camera.zoomBy(1.25);
         });
+    }
+
+    /**
+     * Pindah mode fokus kamera.
+     * Saat fokus ke karakter: batas zoom minimum diturunkan ke 0.05 dan bidang potong dekat
+     * (near plane) dikecilkan ke 0.01, sehingga kamera bisa masuk menembus permukaan badan
+     * dan bentuk bagian dalamnya terlihat.
+     */
+    setFocus(index) {
+        this.focus = index;
+        const cam = this.camera;
+        if (index === 0) {
+            cam.minDistance = 4.0;
+            cam.near = 0.1;
+            cam.far = 250.0;
+            cam.desiredTarget[0] = 0.0;
+            cam.desiredTarget[1] = 1.4;
+            cam.desiredTarget[2] = 1.2;
+            cam.desiredDistance = 8.5;
+        } else {
+            cam.minDistance = 0.05;
+            cam.near = 0.01;
+            cam.far = 120.0;   // far diperkecil supaya presisi depth tetap baik dengan near yang kecil
+            cam.desiredDistance = 3.5;
+        }
+        if (this.focusLabel) {
+            this.focusLabel.textContent = 'Fokus: ' + this.focusNames[index];
+        }
+    }
+
+    /** Titik tengah karakter yang sedang difokus (posisi dunia, mengikuti animasi). */
+    getFocusPoint() {
+        if (this.focus === 1) {
+            // Pusat ellipsoid badan Wheezy (ikut bergeser, melompat, dan berputar)
+            const m = this.wheezy.bodyMesh.worldMatrix;
+            return [m[12], m[13], m[14]];
+        }
+        if (this.focus === 2) {
+            return this.hamm.getFocusPoint();
+        }
+        if (this.focus === 3) {
+            // Pusat badan Alien, sedikit dinaikkan supaya kepala ikut terlihat
+            const m = this.alien.body.worldMatrix;
+            return [m[12], m[13] + 0.25, m[14]];
+        }
+        return null;
     }
 
     resizeCanvas() {
@@ -201,21 +264,28 @@ class App {
         const gl = this.gl;
         const locs = this.programInfo.locations;
 
-        // 1. Update Camera (auto-rotate pelan kalau tidak sedang di-drag)
-        if (this.controls.autoRotate && !this.camera.isDragging) {
-            this.camera.desiredTheta -= delta * 0.2;
-        }
-        const aspect = this.canvas.width / this.canvas.height;
-        this.camera.update(aspect);
-
-        // 2. Update Character & Environment Animations
+        // 1. Update Character & Environment Animations
         if (this.controls.animate) this.animTime += delta;
         const t = this.animTime;
 
-        this.pingo.update(t, this.controls);
+        this.wheezy.update(t, this.controls);
         this.hamm.update(t);
         this.updateAlien(t, delta);
-        this.environment.update(t, this.pingo.root.position);
+        this.environment.update(t, this.wheezy.root.position);
+
+        // 2. Update Camera (auto-rotate pelan kalau tidak sedang di-drag)
+        if (this.controls.autoRotate && !this.camera.isDragging) {
+            this.camera.desiredTheta -= delta * 0.2;
+        }
+        // Mode fokus: target kamera mengikuti karakter setiap frame
+        const focusPoint = this.getFocusPoint();
+        if (focusPoint) {
+            this.camera.desiredTarget[0] = focusPoint[0];
+            this.camera.desiredTarget[1] = focusPoint[1];
+            this.camera.desiredTarget[2] = focusPoint[2];
+        }
+        const aspect = this.canvas.width / this.canvas.height;
+        this.camera.update(aspect);
 
         // 3. Clear Buffers
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -240,13 +310,13 @@ class App {
         // 5. Draw Pass 1: Opaque Objects
         gl.depthMask(true);
         this.environment.root.draw(gl, this.programInfo, this.normalMat3, false);
-        this.pingo.root.draw(gl, this.programInfo, this.normalMat3, false);
+        this.wheezy.root.draw(gl, this.programInfo, this.normalMat3, false);
         this.hamm.draw(gl, this.programInfo, this.normalMat3, false);
         this.drawAlien(false);
 
-        // 6. Draw Pass 2: Transparent Objects (Bayangan Pingo & Alien, Gelembung Sabun, Berkas Cahaya)
+        // 6. Draw Pass 2: Transparent Objects (Bayangan Wheezy & Alien, Gelembung Sabun, Berkas Cahaya)
         gl.depthMask(false);
-        this.pingo.root.draw(gl, this.programInfo, this.normalMat3, true);
+        this.wheezy.root.draw(gl, this.programInfo, this.normalMat3, true);
         this.drawAlien(true);
         this.environment.root.draw(gl, this.programInfo, this.normalMat3, true);
         gl.depthMask(true);

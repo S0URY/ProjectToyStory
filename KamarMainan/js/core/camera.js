@@ -95,7 +95,8 @@ export class OrbitCamera {
 
         c.addEventListener('wheel', (e) => {
             e.preventDefault();
-            this.desiredDistance = this.clampDistance(this.desiredDistance + e.deltaY * 0.01);
+            // Zoom multiplikatif: makin dekat makin halus, jadi bisa zoom sampai masuk ke dalam badan
+            this.desiredDistance = this.clampDistance(this.desiredDistance * Math.exp(e.deltaY * 0.0015));
         }, { passive: false });
 
         // Touch support
@@ -137,6 +138,11 @@ export class OrbitCamera {
         c.addEventListener('touchend', () => {
             this.isDragging = false;
         });
+    }
+
+    /** Zoom dengan tombol (Z / X). factor < 1 = mendekat, > 1 = menjauh. */
+    zoomBy(factor) {
+        this.desiredDistance = this.clampDistance(this.desiredDistance * factor);
     }
 
     update(aspect) {
