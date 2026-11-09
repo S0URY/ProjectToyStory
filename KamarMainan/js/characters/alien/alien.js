@@ -26,9 +26,9 @@ export class Alien {
         // Ubah Ukuran
         this.root = new SceneNode("LGM_Root");
         this.root.scale = Vec3.create(0.45, 0.45, 0.45);
+        this.root.position = Vec3.create(1.0, 0.0, 0.0);
 
         // Dynamic animation properties
-        this.antennaWobble = 0.0;
         this.eyeBlink = 1.0;
         this.eyelids = [];
 
@@ -722,13 +722,13 @@ export class Alien {
     /**
      * MASTER NARRATIVE ANIMATION STORY:
      * Alur cerita terintegrasi mendemonstrasikan seluruh transformasi matematika:
-     * 1. [0.0  -  3.2s] TRANSLATE: Berjalan ke depan lalu berhenti (Z: 0.0 -> 1.8).
+     * 1. [0.0  -  3.2s] TRANSLATE: Berjalan ke depan lalu berhenti (X: 1.0, Z: 0.0 -> 1.8).
      * 2. [3.2  -  6.2s] ROTATE: Berhenti, kepala menengok ke kiri lalu ke kanan.
-     * 3. [6.2  - 10.0s] ROTATE & TRANSLATE: Berputar 90° ke kanan lalu jalan ke kanan (X: 0.0 -> 2.2).
+     * 3. [6.2  - 10.0s] ROTATE & TRANSLATE: Berputar 90° ke kanan lalu jalan ke kanan (X: 1.0 -> 3.2).
      * 4. [10.0 - 11.8s] ROTATE: Menoleh ke depan & memutar badan menghadap kamera.
      * 5. [11.8 - 16.0s] SCALING: Melompat-lompat dengan squash & stretch ekstrem (penyet-penyet squishy).
      * 6. [16.0 - 19.2s] ROTATE ARBITRARY AXIS: Berputar 360° mengelilingi sumbu miring sembarang [1.0, 1.0, 0.5].
-     * 7. [19.2 - 24.2s] TRANSLATE & ROTATE: Menoleh ke titik awal, berputar menghadap sana, lalu berjalan kembali ke origin.
+     * 7. [19.2 - 24.2s] TRANSLATE & ROTATE: Menoleh ke titik awal [1.0, 0, 0], berputar menghadap sana, lalu berjalan kembali ke origin.
      * 8. [24.2 - 26.0s] ROTATE: Berputar kembali menghadap depan, pose ramah, lalu loop mengulang dari awal.
      * Total cycle: 26.0 detik!
      */
@@ -737,13 +737,13 @@ export class Alien {
         let status = "";
 
         // =========================================================================
-        // FASE 1: TRANSLATE - Berjalan maju ke depan (Z: 0.0 -> 1.8) lalu berhenti
+        // FASE 1: TRANSLATE - Berjalan maju ke depan (X: 1.0, Z: 0.0 -> 1.8) lalu berhenti
         // =========================================================================
         if (t < 3.2) {
             const p = Math.min(1.0, t / 3.2);
             const pSmooth = 0.5 - 0.5 * Math.cos(p * Math.PI);
 
-            this.root.position[0] = 0.0;
+            this.root.position[0] = 1.0;
             this.root.position[2] = pSmooth * 1.8;
             this.root.rotation[1] = 0.0;
             this.head.rotation[1] = 0.0;
@@ -755,7 +755,7 @@ export class Alien {
         // FASE 2: ROTATE - Berhenti, kepala menengok ke kiri lalu ke kanan
         // =========================================================================
         else if (t < 6.2) {
-            this.root.position[0] = 0.0;
+            this.root.position[0] = 1.0;
             this.root.position[2] = 1.8;
             this.root.rotation[1] = 0.0;
             this.applyIdleGait(globalTime);
@@ -802,17 +802,17 @@ export class Alien {
             if (tRel < turnDuration) {
                 // Sub-fase 3A: Berputar menghadap kanan (+X, 0 -> +PI/2)
                 const pTurn = 0.5 - 0.5 * Math.cos((tRel / turnDuration) * Math.PI);
-                this.root.position[0] = 0.0;
+                this.root.position[0] = 1.0;
                 this.root.position[2] = 1.8;
                 this.root.rotation[1] = pTurn * (Math.PI * 0.5);
                 this.head.rotation[1] = 0.0;
                 this.applyWalkingGait(globalTime, 6.0);
                 status = "🔄 3. ROTATE: Berputar 90° Menghadap ke Kanan...";
             } else {
-                // Sub-fase 3B: Berjalan maju ke kanan menghadap ke kanan (X: 0.0 -> 2.2)
+                // Sub-fase 3B: Berjalan maju ke kanan menghadap ke kanan (X: 1.0 -> 3.2)
                 const pWalk = (tRel - turnDuration) / (1.0 - turnDuration);
                 const pSmooth = 0.5 - 0.5 * Math.cos(pWalk * Math.PI);
-                this.root.position[0] = pSmooth * 2.2;
+                this.root.position[0] = 1.0 + pSmooth * 2.2;
                 this.root.position[2] = 1.8;
                 this.root.rotation[1] = Math.PI * 0.5; // Menghadap lurus ke kanan (+X)
                 this.head.rotation[1] = 0.0;
@@ -825,7 +825,7 @@ export class Alien {
         // =========================================================================
         else if (t < 11.8) {
             const tRel = (t - 10.0) / 1.8;
-            this.root.position[0] = 2.2;
+            this.root.position[0] = 3.2;
             this.root.position[2] = 1.8;
             this.applyIdleGait(globalTime);
 
@@ -849,7 +849,7 @@ export class Alien {
         // Didesain sangat halus (continuous C1 curve) dengan elastisitas mainan karet
         // =========================================================================
         else if (t < 16.0) {
-            this.root.position[0] = 2.2;
+            this.root.position[0] = 3.2;
             this.root.position[2] = 1.8;
             this.root.rotation[1] = 0.0;
             this.head.rotation[1] = 0.0;
@@ -968,43 +968,100 @@ export class Alien {
         }
         // =========================================================================
         // FASE 6: ROTATE ARBITRARY AXIS - Putaran 360° Sumbu Miring Sembarang [1, 1, 0.5]
+        // Sub-fase:
+        //   0.00–0.12 : Take-off bounce (anticipation squash → melesat naik)
+        //   0.12–0.88 : Melayang & berputar di udara
+        //   0.88–1.00 : Landing bounce (squash mendarat → rebound elastis)
         // =========================================================================
         else if (t < 19.2) {
             const tRel = (t - 16.0) / 3.2;
-            this.root.position[0] = 2.2;
+            this.root.position[0] = 3.2;
             this.root.position[2] = 1.8;
             this.root.rotation[1] = 0.0;
             this.head.rotation[1] = 0.0;
 
-            // Elevasi melayang di udara saat putaran salto
-            const lift = Math.sin(tRel * Math.PI) * 2.85;
-            this.body.position[1] = 1.78 + lift;
+            // --- SUB-FASE: take-off bounce (0.00 – 0.12) ---
+            if (tRel < 0.12) {
+                const p = tRel / 0.12;
+                // Squash anticipation: penyet sebentar di lantai sebelum melesat
+                const squash = Math.sin(p * Math.PI);
+                this.body.position[1] = 1.78 - squash * 0.22;
+                this.body.scale[1] = 1.0 - squash * 0.28;
+                this.body.scale[0] = 1.0 + squash * 0.18;
+                this.body.scale[2] = 1.0 + squash * 0.18;
+                this.body.arbitraryRotation = { angle: 0, axis: [1, 1, 0.5] };
+                // Lengan & kaki bersiap
+                if (this.leftArm) { this.leftArm.rotation[2] = 0.22 + squash * 0.43; }
+                if (this.rightArm) { this.rightArm.rotation[2] = -0.22 - squash * 0.43; }
+                if (this.leftLeg) { this.leftLeg.rotation[0] = squash * 0.20; }
+                if (this.rightLeg) { this.rightLeg.rotation[0] = -squash * 0.20; }
+                if (this.contactShadow) {
+                    this.contactShadow.scale[0] = 1.25 + squash * 0.30;
+                    this.contactShadow.scale[2] = 1.05 + squash * 0.25;
+                    this.contactShadow.opacity = 0.65 + squash * 0.20;
+                }
+                status = "🛫 6. TAKE-OFF: Ancang-ancang Squash sebelum Melesat...";
 
-            const arbAxis = [
-                1.0 + Math.sin(tRel * Math.PI * 2) * 0.4,
-                1.0,
-                0.5 + Math.cos(tRel * Math.PI * 3) * 0.3
+                // --- SUB-FASE: melayang & berputar (0.12 – 0.88) ---
+            } else if (tRel < 0.88) {
+                const tFly = (tRel - 0.12) / 0.76;
+                // Reset scale badan ke normal
+                this.body.scale[0] = 1.0;
+                this.body.scale[1] = 1.0;
+                this.body.scale[2] = 1.0;
+                // Busur terbang: smooth arc naik-turun
+                const lift = Math.sin(tFly * Math.PI) * 2.85;
+                this.body.position[1] = 1.78 + lift;
+                // Sumbu wobbling organik
+                const arbAxis = [
+                    1.0 + Math.sin(tFly * Math.PI * 2) * 0.4,
+                    1.0,
+                    0.5 + Math.cos(tFly * Math.PI * 3) * 0.3
                 ];
-             const smoothT = tRel < 0.5
-                ? 2 * tRel * tRel
-                : 1 - Math.pow(-2 * tRel + 2, 2) / 2;
-            const angle = smoothT * (4.0 * Math.PI); // 2× putaran
+                const smoothT = tFly < 0.5
+                    ? 2 * tFly * tFly
+                    : 1 - Math.pow(-2 * tFly + 2, 2) / 2;
+                const angle = smoothT * (4.0 * Math.PI);
+                this.body.arbitraryRotation = { angle, axis: arbAxis };
+                // Pose terbang: lengan & kaki terentang
+                if (this.leftArm) { this.leftArm.rotation[2] = 0.65; }
+                if (this.rightArm) { this.rightArm.rotation[2] = -0.65; }
+                if (this.leftLeg) { this.leftLeg.rotation[0] = 0.28; }
+                if (this.rightLeg) { this.rightLeg.rotation[0] = -0.28; }
+                if (this.contactShadow) {
+                    const sFactor = 1.0 - Math.sin(tFly * Math.PI) * 0.45;
+                    this.contactShadow.scale[0] = 1.25 * sFactor;
+                    this.contactShadow.scale[2] = 1.05 * sFactor;
+                    this.contactShadow.opacity = 0.65 * (1.0 - Math.sin(tFly * Math.PI) * 0.50);
+                }
+                status = "🔄 6. ROTATE ARBITRARY AXIS: Atraksi Putaran 360° Sumbu Miring [1, 1, 0.5]...";
 
-            this.body.arbitraryRotation = { angle: angle, axis: arbAxis };
-
-            // Pose atraksi
-            if (this.leftArm) { this.leftArm.rotation[2] = 0.65; }
-            if (this.rightArm) { this.rightArm.rotation[2] = -0.65; }
-            if (this.leftLeg) { this.leftLeg.rotation[0] = 0.28; }
-            if (this.rightLeg) { this.rightLeg.rotation[0] = -0.28; }
-
-            if (this.contactShadow) {
-                const sFactor = 1.0 - Math.sin(tRel * Math.PI) * 0.45;
-                this.contactShadow.scale[0] = 1.25 * sFactor;
-                this.contactShadow.scale[2] = 1.05 * sFactor;
-                this.contactShadow.opacity = 0.65 * (1.0 - Math.sin(tRel * Math.PI) * 0.50);
+                // --- SUB-FASE: landing bounce (0.88 – 1.00) ---
+            } else {
+                const p = (tRel - 0.88) / 0.12;
+                // Reset rotasi arbitrary ke nol setelah mendarat
+                this.body.arbitraryRotation = { angle: 0, axis: [1, 1, 0.5] };
+                // Squash mendarat lalu rebound elastis ke normal
+                // p: 0→0.5 squash turun, 0.5→1.0 rebound membal naik
+                const squash = p < 0.5
+                    ? Math.sin((p / 0.5) * Math.PI * 0.5)          // naik ke puncak squash
+                    : Math.sin(((1.0 - p) / 0.5) * Math.PI * 0.5) * 0.45; // rebound lebih kecil
+                this.body.position[1] = 1.78 - squash * 0.30;
+                this.body.scale[1] = 1.0 - squash * 0.32;
+                this.body.scale[0] = 1.0 + squash * 0.22;
+                this.body.scale[2] = 1.0 + squash * 0.22;
+                // Lengan & kaki menyerap benturan
+                if (this.leftArm) { this.leftArm.rotation[2] = 0.22 + squash * 0.50; }
+                if (this.rightArm) { this.rightArm.rotation[2] = -0.22 - squash * 0.50; }
+                if (this.leftLeg) { this.leftLeg.rotation[0] = squash * 0.25; }
+                if (this.rightLeg) { this.rightLeg.rotation[0] = -squash * 0.25; }
+                if (this.contactShadow) {
+                    this.contactShadow.scale[0] = 1.25 + squash * 0.35;
+                    this.contactShadow.scale[2] = 1.05 + squash * 0.28;
+                    this.contactShadow.opacity = 0.65 + squash * 0.25;
+                }
+                status = "🛬 6. LANDING: Bounce Mendarat & Rebound Elastis...";
             }
-            status = "🔄 6. ROTATE ARBITRARY AXIS: Atraksi Putaran 360° Sumbu Miring [1, 1, 0.5]...";
         }
         // =========================================================================
         // FASE 7: TRANSLATE & ROTATE - Menengok ke awal, berputar & jalan ke origin
@@ -1014,9 +1071,9 @@ export class Alien {
             const targetAngle = Math.atan2(-2.2, -1.8); // ~ -2.256 rad (-129.3°)
 
             if (tRel < 0.16) {
-                // Sub-fase 7A: Kepala menoleh ke belakang melihat titik awal [0, 0, 0]
+                // Sub-fase 7A: Kepala menoleh ke belakang melihat titik awal [1.0, 0, 0]
                 const turnP = 0.5 - 0.5 * Math.cos((tRel / 0.16) * Math.PI);
-                this.root.position[0] = 2.2;
+                this.root.position[0] = 3.2;
                 this.root.position[2] = 1.8;
                 this.root.rotation[1] = 0.0;
                 this.head.rotation[1] = turnP * -1.85;
@@ -1027,17 +1084,17 @@ export class Alien {
                 // Sub-fase 7B: Seluruh badan berputar menghadap arah titik awal
                 const bodyTurnP = (tRel - 0.16) / 0.12;
                 const smoothTurn = 0.5 - 0.5 * Math.cos(bodyTurnP * Math.PI);
-                this.root.position[0] = 2.2;
+                this.root.position[0] = 3.2;
                 this.root.position[2] = 1.8;
                 this.root.rotation[1] = smoothTurn * targetAngle;
                 this.head.rotation[1] = (1.0 - smoothTurn) * -1.85;
                 this.applyWalkingGait(globalTime, 6.0);
                 status = "🔄 7. ROTATE: Badan Berputar Menghadap Titik Awal...";
             } else {
-                // Sub-fase 7C: Berjalan diagonal kembali ke titik origin [0, 0, 0]
+                // Sub-fase 7C: Berjalan diagonal kembali ke titik origin [1.0, 0, 0]
                 const walkP = (tRel - 0.28) / 0.72;
                 const smoothWalk = 0.5 - 0.5 * Math.cos(walkP * Math.PI);
-                this.root.position[0] = 2.2 * (1.0 - smoothWalk);
+                this.root.position[0] = 1.0 + 2.2 * (1.0 - smoothWalk);
                 this.root.position[2] = 1.8 * (1.0 - smoothWalk);
                 this.root.rotation[1] = targetAngle;
                 this.head.rotation[1] = 0.0;
@@ -1053,7 +1110,7 @@ export class Alien {
             const targetAngle = Math.atan2(-2.2, -1.8);
             const smoothTurn = 0.5 - 0.5 * Math.cos(Math.min(1.0, tRel) * Math.PI);
 
-            this.root.position[0] = 0.0;
+            this.root.position[0] = 1.0;
             this.root.position[2] = 0.0;
             this.root.rotation[1] = targetAngle * (1.0 - smoothTurn);
             this.head.rotation[1] = 0.0;
@@ -1061,190 +1118,7 @@ export class Alien {
             status = "✨ 8. ROTATE: Berbalik Menghadap Depan & Loop Mengulang!";
         }
 
-
         return { statusText: status };
     }
-
-    /**
-     * Mode Diam (Idle neutral pose saat animasi tidak berjalan)
-     */
-    updateIdle(time, delta = 0.016) {
-        this.preUpdateFrame(time);
-        this.root.position[0] = 0.0;
-        this.root.position[2] = 0.0;
-        this.root.rotation[1] = 0.0;
-        this.applyIdleGait(time);
-
-
-        return { statusText: "Tekan Spasi untuk Memulai Cerita Animasi" };
-    }
-
-    /**
-     * Kompatibilitas dengan pemanggil klasik update(time, isMarching, isChanting, isJumping, delta)
-     */
-    update(time, isMarching = false, isChanting = false, isJumping = false, delta = 0.016) {
-        if (isMarching || isChanting || isJumping) {
-            return this.updateStory(time % 26.0, delta, time);
-        } else {
-            return this.updateIdle(time, delta);
-        }
-    }
-
-
-    /**
-     * Melepas tombol kanan mouse: mengaktifkan pemulihan pegas stabil teredam
-     * agar karakter kembali normal 100% ke posisi awal secara halus
-     */
-    releaseClumsyDrag() {
-        this.clumsy.isDragging = false;
-        this.clumsy.dragX = 0;
-        this.clumsy.dragY = 0;
-        // Nolkan kecepatan artifisial agar tidak terlempar berlebihan saat dilepas
-        this.clumsy.velX = 0.0;
-        this.clumsy.velY = 0.0;
-    }
-
-
-    /**
-     * Hit-test bounding spheres untuk Raycasting dari kursor mouse
-     */
-    getHitSpheres() {
-        const getPos = (node) => {
-            if (!node || !node.worldMatrix) return [0, 0, 0];
-            const m = node.worldMatrix;
-            return [m[12], m[13], m[14]];
-        };
-
-        const spheres = [];
-        const scale = (this.root && this.root.scale) ? this.root.scale[0] : 1.0;
-
-        // 1. Badan (Body - Root of character mass)
-        if (this.body) {
-            spheres.push({
-                part: 'body',
-                name: 'Badan (Parent Utama)',
-                desc: 'Parent Seluruh Bagian: Kepala, Tangan & Kaki Ikut Bergerak!',
-                center: getPos(this.body),
-                radius: 1.18 * scale
-            });
-        }
-
-        // 2. Kepala (Head - Cranial Parent)
-        if (this.head) {
-            spheres.push({
-                part: 'head',
-                name: 'Kepala (Child Badan)',
-                desc: 'Parent Wajah: Mata, Mulut, Telinga & Antena Mengikuti!',
-                center: getPos(this.head),
-                radius: 1.18 * scale
-            });
-        }
-        if (this.antennaBulb) {
-            spheres.push({
-                part: 'head',
-                name: 'Antena (Child Kepala)',
-                desc: 'Menggerakkan Kepala & Seluruh Fitur Wajah!',
-                center: getPos(this.antennaBulb),
-                radius: 0.50 * scale
-            });
-        }
-        if (this.ears && this.ears.length >= 2) {
-            spheres.push({
-                part: 'head',
-                name: 'Telinga Kiri (Child Kepala)',
-                desc: 'Menggerakkan Kepala & Seluruh Fitur Wajah!',
-                center: getPos(this.ears[0]),
-                radius: 0.55 * scale
-            });
-            spheres.push({
-                part: 'head',
-                name: 'Telinga Kanan (Child Kepala)',
-                desc: 'Menggerakkan Kepala & Seluruh Fitur Wajah!',
-                center: getPos(this.ears[1]),
-                radius: 0.55 * scale
-            });
-        }
-
-        // 3. Tangan Kiri (Left Arm & Hand)
-        if (this.leftHand) {
-            spheres.push({
-                part: 'leftArm',
-                name: 'Telapak & Jari Kiri (Child Lengan)',
-                desc: 'Hanya Lengan Kiri, Telapak & 3 Jari Kiri yang Bergerak!',
-                center: getPos(this.leftHand),
-                radius: 0.65 * scale
-            });
-        }
-        if (this.leftArm) {
-            spheres.push({
-                part: 'leftArm',
-                name: 'Lengan Kiri (Child Badan)',
-                desc: 'Hanya Lengan Kiri, Telapak & 3 Jari Kiri yang Bergerak!',
-                center: getPos(this.leftArm),
-                radius: 0.60 * scale
-            });
-        }
-
-        // 4. Tangan Kanan (Right Arm & Hand)
-        if (this.rightHand) {
-            spheres.push({
-                part: 'rightArm',
-                name: 'Telapak & Jari Kanan (Child Lengan)',
-                desc: 'Hanya Lengan Kanan, Telapak & 3 Jari Kanan yang Bergerak!',
-                center: getPos(this.rightHand),
-                radius: 0.65 * scale
-            });
-        }
-        if (this.rightArm) {
-            spheres.push({
-                part: 'rightArm',
-                name: 'Lengan Kanan (Child Badan)',
-                desc: 'Hanya Lengan Kanan, Telapak & 3 Jari Kanan yang Bergerak!',
-                center: getPos(this.rightArm),
-                radius: 0.60 * scale
-            });
-        }
-
-        // 5. Kaki Kiri (Left Leg & Boot)
-        if (this.leftBoot) {
-            spheres.push({
-                part: 'leftLeg',
-                name: 'Sepatu Kiri (Child Kaki)',
-                desc: 'Hanya Kaki & Sepatu Kiri yang Bergerak!',
-                center: getPos(this.leftBoot),
-                radius: 0.55 * scale
-            });
-        }
-        if (this.leftLeg) {
-            spheres.push({
-                part: 'leftLeg',
-                name: 'Kaki Kiri (Child Badan)',
-                desc: 'Hanya Kaki & Sepatu Kiri yang Bergerak!',
-                center: getPos(this.leftLeg),
-                radius: 0.50 * scale
-            });
-        }
-
-        // 6. Kaki Kanan (Right Leg & Boot)
-        if (this.rightBoot) {
-            spheres.push({
-                part: 'rightLeg',
-                name: 'Sepatu Kanan (Child Kaki)',
-                desc: 'Hanya Kaki & Sepatu Kanan yang Bergerak!',
-                center: getPos(this.rightBoot),
-                radius: 0.55 * scale
-            });
-        }
-        if (this.rightLeg) {
-            spheres.push({
-                part: 'rightLeg',
-                name: 'Kaki Kanan (Child Badan)',
-                desc: 'Hanya Kaki & Sepatu Kanan yang Bergerak!',
-                center: getPos(this.rightLeg),
-                radius: 0.50 * scale
-            });
-        }
-
-        return spheres;
-    }
 }
+
