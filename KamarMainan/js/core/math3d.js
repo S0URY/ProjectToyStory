@@ -23,6 +23,10 @@ export const Vec3 = {
         return out;
     },
 
+    clone(a) {
+        return new Float32Array([a[0], a[1], a[2]]);
+    },
+
     add(out, a, b) {
         out[0] = a[0] + b[0];
         out[1] = a[1] + b[1];
@@ -100,6 +104,10 @@ export const Mat4 = {
     copy(out, a) {
         out.set(a);
         return out;
+    },
+
+    clone(a) {
+        return new Float32Array(a);
     },
 
     multiply(out, a, b) {
